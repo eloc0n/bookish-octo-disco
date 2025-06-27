@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+celery
+flower
+httpx
+pika
+ruff
+alembic
+pydantic-settings
+python-dotenv
+psycopg2-binary
+sqlmodel
+aiohttp
+aio-pika
+asyncpg
+pytest
+pytest-asyncio
