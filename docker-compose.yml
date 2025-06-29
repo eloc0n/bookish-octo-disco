@@ -1,6 +1,5 @@
 volumes:
   postgres_data:
-  # rabbitmq_data:
 
 services:
   fastapi:
@@ -17,17 +16,13 @@ services:
     volumes:
       - .:/app
     depends_on:
-      # - rabbitmq
       - db
     environment:
       - PYTHONPATH=/app
       - ENVIRONMENT=docker
-      # - RABBITMQ_HOST=${RABBITMQ_HOST}
-      # - RABBITMQ_PORT=${RABBITMQ_PORT}
-      # - POSTGRES_SERVER=${POSTGRES_SERVER}
-      # - POSTGRES_PORT=${POSTGRES_PORT}
 
   nginx:
+    # To have production-like setup
     image: nginx:1.25
     restart: unless-stopped
     depends_on:
@@ -54,31 +49,3 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # rabbitmq:
-  #   image: rabbitmq:3-management
-  #   ports:
-  #     - "5672:5672"
-  #     - "15672:15672"
-  #   volumes:
-  #     - rabbitmq_data:/var/lib/rabbitmq
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-  # celery:
-  #   image: fastapi:latest
-  #   command: celery -A main.celery worker --loglevel=info
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - .:/app
-  #   depends_on:
-  #     - fastapi
-  #     - rabbitmq
-  #     - db
-  #   environment:
-  #     - RABBITMQ_HOST=${RABBITMQ_HOST}
-  #     - RABBITMQ_PORT=${RABBITMQ_PORT}

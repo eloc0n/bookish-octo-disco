@@ -1,3 +1,6 @@
+include .env
+export $(shell sed 's/=.*//' .env)
+
 # Check id docker-compose is available else use docker compose
 ifeq (, $(shell which docker-compose))
     DC = docker compose
@@ -6,7 +9,7 @@ else
 endif
 APP_NAME=fastapi
 UID = $(shell id -u)
-TEST_PROJECT_NAME=boilerplate_test
+TEST_PROJECT_NAME=swapi_test
 
 
 # Format python files.
@@ -25,7 +28,12 @@ start:
 alembic-init:
 	$(DC) run --rm --no-deps $(APP_NAME) sh -c "alembic init alembic"
 
+alembic-reset:
+	@echo "Dropping alembic_version table..."
+	$(DC) exec -T db psql -U $(POSTGRES_USER) -d $(POSTGRES_USER) -c "DROP TABLE IF EXISTS alembic_version;"
+
 alembic-revision:
+	make alembic-reset
 	@read -p "Enter revision message: " msg; \
 	$(DC) run --rm --no-deps $(APP_NAME) sh -c "alembic revision --autogenerate -m '$$msg'"
 
@@ -52,7 +60,7 @@ test:
 	@echo "🔄 Waiting for test_db to become healthy..."
 	@sleep 5 && until docker exec $$(docker ps -qf "name=$(TEST_PROJECT_NAME)-test_db") pg_isready -U postgres -d test_db; do sleep 1; done
 	@echo "✅ Test DB is ready. Running tests..."
-	docker compose -f docker-compose.test.yml --project-name $(TEST_PROJECT_NAME) exec test_runner sh -c "ENVIRONMENT=test pytest -s --asyncio-mode=auto"
+	docker compose -f docker-compose.test.yml --project-name $(TEST_PROJECT_NAME) exec test_runner sh -c "ENVIRONMENT=test pytest -s"
 	make test-down
 
 
@@ -64,3 +72,23 @@ shell:
 # psql -U postgres -d mydatabase
 db-connect:
 	docker exec --user=root -ti $(CONTAINER) /bin/sh
+
+import-swapi:
+	docker compose run --rm fastapi python scripts/import_swapi.py
+
+reset-db:
+	@echo "🧨 Dropping and recreating database..."
+	$(DC) exec -T db psql -U $(POSTGRES_USER) -d $(POSTGRES_USER) -c "DROP DATABASE IF EXISTS $(POSTGRES_DB);"
+	$(DC) exec -T db psql -U $(POSTGRES_USER) -d $(POSTGRES_USER) -c "CREATE DATABASE $(POSTGRES_DB);"
+	@echo "📦 Applying migrations..."
+	make alembic-upgrade
+	@echo "🛰️  Reimporting SWAPI data..."
+	make import-swapi
+
+coverage:
+	make test-up
+	@echo "🔄 Waiting for test_db to become healthy..."
+	@sleep 5 && until docker exec $$(docker ps -qf "name=$(TEST_PROJECT_NAME)-test_db") pg_isready -U postgres -d test_db; do sleep 1; done
+	@echo "✅ Test DB is ready. Running coverage..."
+	docker compose -f docker-compose.test.yml --project-name $(TEST_PROJECT_NAME) exec test_runner sh -c "ENVIRONMENT=test pytest --cov=core --cov-report=term-missing"
+	make test-down
