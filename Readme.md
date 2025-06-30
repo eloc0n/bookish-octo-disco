@@ -138,6 +138,7 @@ make format
 ## 📬 API Example
 
 ```http
+GET /api/characters/1/
 GET /api/characters/?name=Luke
 GET /api/starships/?page=2
 GET /api/films/

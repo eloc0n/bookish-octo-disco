@@ -1,4 +1,4 @@
-from fastapi import Request
+from fastapi import Request, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.models import Starship
 from core.schemas.starship import StarshipRead
@@ -23,3 +23,10 @@ async def get_starships(
         filter=name,
         filter_field=Starship.name,
     )
+
+
+async def get_starship(starship_id: int, session: AsyncSession) -> StarshipRead:
+    starship = await session.get(Starship, starship_id)
+    if not starship:
+        raise HTTPException(status_code=404, detail="Starship not found")
+    return starship

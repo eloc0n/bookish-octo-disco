@@ -1,8 +1,10 @@
+import pytest
 import pytest_asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.models import Starship
-from core.crud.starship import get_starships
+from core.crud.starship import get_starships, get_starship
 from core.crud.starship import paginator
+from fastapi import HTTPException
 
 
 class MockRequest:
@@ -11,7 +13,7 @@ class MockRequest:
 
 
 @pytest_asyncio.fixture
-async def starships(session: AsyncSession):
+async def sample_starships(session: AsyncSession):
     starships = [
         Starship(name="X-Wing", model="T-65B", manufacturer="Incom Corporation"),
         Starship(
@@ -29,7 +31,7 @@ async def starships(session: AsyncSession):
     await session.commit()
 
 
-async def test_get_starships_without_filter(session: AsyncSession, starships):
+async def test_get_starships_without_filter(session: AsyncSession, sample_starships):
     request = MockRequest("http://test/api/starships/")
     response = await get_starships(session=session, request=request)
 
@@ -40,7 +42,7 @@ async def test_get_starships_without_filter(session: AsyncSession, starships):
     assert "Millennium Falcon" in names
 
 
-async def test_get_starships_with_filter(session: AsyncSession, starships):
+async def test_get_starships_with_filter(session: AsyncSession, sample_starships):
     request = MockRequest("http://test/api/starships/")
     response = await get_starships(session=session, request=request, name="X-Wing")
 
@@ -48,7 +50,7 @@ async def test_get_starships_with_filter(session: AsyncSession, starships):
     assert response.results[0].name == "X-Wing"
 
 
-async def test_get_starships_pagination(session: AsyncSession, starships):
+async def test_get_starships_pagination(session: AsyncSession, sample_starships):
     request = MockRequest("http://test/api/starships/")
     # Small page size to simulate pagination
     paginator.limit = 2
@@ -64,3 +66,13 @@ async def test_get_starships_pagination(session: AsyncSession, starships):
     assert len(page_2.results) == 1
     assert page_2.next is None
     assert page_2.previous is not None
+
+
+async def test_get_starship_by_id(session, sample_starships):
+    result = await get_starship(2, session)
+    assert result.name == "TIE Fighter"
+
+
+async def test_get_starship_by_id_not_found(session, sample_starships):
+    with pytest.raises(HTTPException):
+        await get_starship(999, session)

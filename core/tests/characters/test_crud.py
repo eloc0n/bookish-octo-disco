@@ -1,9 +1,10 @@
+import pytest
 import pytest_asyncio
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.models import Character
-from core.crud.character import get_characters
+from core.crud.character import get_character, get_characters
 from core.schemas.character import CharacterRead
-from fastapi import Request
+from fastapi import Request, HTTPException
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -46,3 +47,13 @@ async def test_search_characters_no_match(session: AsyncSession, sample_characte
     request = Request({"type": "http", "query_string": b"page=1"})
     paginator = await get_characters(session, request=request, name="NotACharacter")
     assert paginator.results == []
+
+
+async def test_get_character_by_id(session, sample_characters):
+    result = await get_character(1, session)
+    assert result.name == "Luke Skywalker"
+
+
+async def test_get_character_by_id_not_found(session, sample_characters):
+    with pytest.raises(HTTPException):
+        await get_character(999, session)

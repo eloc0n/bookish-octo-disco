@@ -5,7 +5,7 @@ from core.models import Film
 
 
 @pytest_asyncio.fixture
-async def films(session: AsyncSession):
+async def sample_films(session: AsyncSession):
     films = [
         Film(
             title="A New Hope",
@@ -30,7 +30,7 @@ async def films(session: AsyncSession):
     await session.commit()
 
 
-async def test_get_films_basic(client: AsyncClient, films):
+async def test_get_films_basic(client: AsyncClient, sample_films):
     response = await client.get("/api/films/")
     data = response.json()
 
@@ -40,7 +40,7 @@ async def test_get_films_basic(client: AsyncClient, films):
     assert any(f["title"] == "A New Hope" for f in data["results"])
 
 
-async def test_get_films_with_filter(client: AsyncClient, films):
+async def test_get_films_with_filter(client: AsyncClient, sample_films):
     response = await client.get("/api/films/?title=Empire")
     data = response.json()
 
@@ -52,3 +52,10 @@ async def test_get_films_with_filter(client: AsyncClient, films):
 async def test_get_films_invalid_page(client: AsyncClient):
     response = await client.get("/api/films/?page=0")
     assert response.status_code == 422
+
+
+async def test_get_film_by_id(client, sample_films):
+    # assuming film with id=1 exists
+    response = await client.get("/api/films/1/")
+    assert response.status_code == 200
+    assert response.json()["id"] == 1

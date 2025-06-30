@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.database.session import get_session
 from core.schemas import CharacterRead
-from core.crud.character import get_characters
+from core.crud.character import get_characters, get_character
 from core.schemas.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
@@ -16,3 +16,8 @@ async def characters(
     session: AsyncSession = Depends(get_session),
 ):
     return await get_characters(session, request, name, page)
+
+
+@router.get("/{character_id}/", response_model=CharacterRead)
+async def character(character_id: int, session: AsyncSession = Depends(get_session)):
+    return await get_character(character_id, session)

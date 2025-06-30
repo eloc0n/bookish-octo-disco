@@ -9,8 +9,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 @pytest_asyncio.fixture
 async def characters_with_links(session: AsyncSession):
-    film = Film(title="A New Hope", release_date="1977-05-25")
-    starship = Starship(name="X-Wing", model="T-65B")
+    film = Film(title="A New Hope", release_date="1977-05-25", episode_id=1)
+    starship = Starship(name="X-Wing", model="T-65B", episode_id=1)
 
     characters = [
         Character(
@@ -86,3 +86,10 @@ async def test_response_schema_matches(client, characters_with_links):
     parsed = PaginatedResponse[CharacterRead].model_validate(response.json())
     assert parsed.count == 3
     assert isinstance(parsed.results[0], CharacterRead)
+
+
+async def test_get_character_by_id(client, characters_with_links):
+    # assuming character with id=1 exists
+    response = await client.get("/api/characters/1/")
+    assert response.status_code == 200
+    assert response.json()["id"] == 1

@@ -1,4 +1,4 @@
-from fastapi import Request
+from fastapi import Request, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.models import Film
 from core.schemas.film import FilmRead
@@ -20,3 +20,10 @@ async def get_films(
         filter=title,
         filter_field=Film.title,
     )
+
+
+async def get_film(film_id: int, session: AsyncSession) -> FilmRead:
+    film = await session.get(Film, film_id)
+    if not film:
+        raise HTTPException(status_code=404, detail="Film not found")
+    return film

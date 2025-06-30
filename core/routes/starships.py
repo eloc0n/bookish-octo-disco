@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlmodel.ext.asyncio.session import AsyncSession
 from core.database.session import get_session
 from core.schemas import StarshipRead
-from core.crud.starship import get_starships
+from core.crud.starship import get_starships, get_starship
 from core.schemas.pagination import PaginatedResponse
 
 router = APIRouter(prefix="/starships", tags=["Starships"])
@@ -16,3 +16,8 @@ async def starships(
     session: AsyncSession = Depends(get_session),
 ):
     return await get_starships(session, request, name, page)
+
+
+@router.get("/{starship_id}/", response_model=StarshipRead)
+async def starship(starship_id: int, session: AsyncSession = Depends(get_session)):
+    return await get_starship(starship_id, session)

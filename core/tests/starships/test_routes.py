@@ -5,7 +5,7 @@ from core.models import Starship
 
 
 @pytest_asyncio.fixture
-async def starships(session: AsyncSession):
+async def sample_starships(session: AsyncSession):
     starships = [
         Starship(name="X-Wing", model="T-65B", manufacturer="Incom Corporation"),
         Starship(
@@ -18,7 +18,7 @@ async def starships(session: AsyncSession):
     await session.commit()
 
 
-async def test_get_starships_basic(client: AsyncClient, starships):
+async def test_get_starships_basic(client: AsyncClient, sample_starships):
     response = await client.get("/api/starships/")
     data = response.json()
 
@@ -28,7 +28,7 @@ async def test_get_starships_basic(client: AsyncClient, starships):
     assert any(s["name"] == "X-Wing" for s in data["results"])
 
 
-async def test_get_starships_with_filter(client: AsyncClient, starships):
+async def test_get_starships_with_filter(client: AsyncClient, sample_starships):
     response = await client.get("/api/starships/?name=wing")
     data = response.json()
 
@@ -40,3 +40,10 @@ async def test_get_starships_with_filter(client: AsyncClient, starships):
 async def test_get_starships_invalid_page(client: AsyncClient):
     response = await client.get("/api/starships/?page=0")
     assert response.status_code == 422
+
+
+async def test_get_starship_by_id(client, sample_starships):
+    # assuming starship with id=1 exists
+    response = await client.get("/api/starships/1/")
+    assert response.status_code == 200
+    assert response.json()["id"] == 1
